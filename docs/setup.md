@@ -25,11 +25,16 @@ Local `supabase start` uses [`supabase/config.toml`](../supabase/config.toml), w
 
 ## GitHub Pages
 
-The workflow `.github/workflows/deploy-pages.yml` tests and publishes pushes to `main`. In the repository:
+The workflow `.github/workflows/deploy-pages.yml` tests and publishes pushes to `main`. Vite bakes repository variables into the JavaScript at `npm run build`, so a deploy without them stays in demo mode even if you add them later.
+
+In the repository:
 
 1. Under **Settings → Pages**, set the source to **GitHub Actions**.
-2. Under **Settings → Secrets and variables → Actions → Variables**, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
-3. The public repository must be named `travel-planner`. For another name, change `base` in `vite.config.ts`.
+2. Under **Settings → Secrets and variables → Actions**, open the **Variables** tab (not Secrets). Create:
+   - `VITE_SUPABASE_URL` — the project URL, for example `https://xxxx.supabase.co`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` — the publishable (anon) key from **Supabase → Project Settings → API**
+3. After adding or changing values, re-run **Actions → Test and deploy GitHub Pages** on `main`. Existing Pages artifacts do not pick up new variables until the next build.
+4. The public repository must be named `travel-planner`. For another name, change `base` in `vite.config.ts`.
 
 ## Quality
 
