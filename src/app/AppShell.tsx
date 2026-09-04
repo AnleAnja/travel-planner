@@ -4,7 +4,6 @@ import {
   Link2,
   MapPin,
   Menu,
-  MoreHorizontal,
   Plus,
   Route,
   X,
@@ -19,6 +18,7 @@ import { PackingPage, type PackingPageProps } from '../features/packing/PackingP
 import { PeoplePage, type PeoplePageProps } from '../features/people/PeoplePage'
 import { useTabRoute } from '../hooks/use-tab-route'
 import { formatShortDate } from '../lib/dates'
+import type { JoinTripResult } from '../lib/use-travel-store'
 import type { Member, Trip } from '../types'
 import { CreateTripDialog, type CreateTripInput } from './CreateTripDialog'
 import { JoinTripDialog } from './JoinTripDialog'
@@ -29,13 +29,14 @@ export interface AppShellProps {
   activeTrip?: Trip
   activeTripId: string
   currentMember?: Member
+  displayName: string
   invitedCode: string
   isOnline: boolean
   syncError: string
   isDemoMode: boolean
   onSelectTrip: (id: string) => void
-  onCreateTrip: (trip: CreateTripInput) => Promise<void>
-  onJoinTrip: (code: string, name: string) => Promise<boolean>
+  onCreateTrip: (trip: CreateTripInput, ownerName: string) => Promise<boolean>
+  onJoinTrip: (code: string, name: string) => Promise<JoinTripResult>
   overview: Omit<OverviewPageProps, 'trip'>
   itinerary: Omit<ItineraryPageProps, 'trip'>
   bookings: Omit<BookingsPageProps, 'trip'>
@@ -52,8 +53,8 @@ export function AppShell(props: AppShellProps) {
   const [dismissedInviteCode, setDismissedInviteCode] = useState('')
   const currentMember = props.currentMember ?? {
     id: 'placeholder',
-    name: '[Dein Name]',
-    role: 'member',
+    name: props.displayName || 'Gast',
+    role: 'member' as const,
     color: '#70807a',
   }
 
@@ -68,25 +69,32 @@ export function AppShell(props: AppShellProps) {
     setDismissedInviteCode(props.invitedCode)
   }
 
-  async function createTrip(trip: CreateTripInput) {
-    await props.onCreateTrip(trip)
-    setCreateOpen(false)
+  async function createTrip(trip: CreateTripInput, ownerName: string) {
+    const created = await props.onCreateTrip(trip, ownerName)
+    if (created) setCreateOpen(false)
   }
 
   async function joinTrip(code: string, name: string) {
-    const joined = await props.onJoinTrip(code, name)
-    if (joined) closeJoinDialog()
-    return joined
+    const result = await props.onJoinTrip(code, name)
+    if (result.ok) closeJoinDialog()
+    return result
   }
 
   const dialogs = (
     <>
-      {createOpen && <CreateTripDialog onClose={() => setCreateOpen(false)} onCreate={createTrip} />}
+      {createOpen && (
+        <CreateTripDialog
+          onClose={() => setCreateOpen(false)}
+          onCreate={createTrip}
+          defaultOwnerName={props.displayName}
+        />
+      )}
       {inviteDialogOpen && (
         <JoinTripDialog
           initialCode={props.invitedCode}
           onClose={closeJoinDialog}
           onJoin={joinTrip}
+          defaultName={props.displayName}
         />
       )}
     </>
@@ -214,7 +222,6 @@ function TripHeader({ trip, tab }: { trip: Trip; tab: Tab }) {
         <h1>{trip.title}</h1>
         <p><MapPin size={16} aria-hidden="true" />{trip.destination}<span>·</span>{formatShortDate(trip.startsOn)} – {formatShortDate(trip.endsOn)}</p>
       </div>
-      <button className="icon-button" aria-label="Weitere Optionen"><MoreHorizontal /></button>
     </header>
   )
 }
@@ -226,7 +233,7 @@ function EmptyWelcome({ onCreate, onJoin }: { onCreate: () => void; onJoin: () =
       <div className="brand-mark large"><Route /></div>
       <span className="eyebrow">Gemeinsam unterwegs</span>
       <h1>Die nächste Reise beginnt hier.</h1>
-      <p>Plane Tage, Packlisten und Kosten gemeinsam mit deinen Lieblingsmenschen.</p>
+      <p>Plane Tage, Packlisten und Kosten gemeinsam mit anderen.</p>
       <div>
         <button className="primary-button" onClick={onCreate}>Reise planen <ArrowRight /></button>
         <button className="secondary-button" onClick={onJoin}>Code eingeben</button>

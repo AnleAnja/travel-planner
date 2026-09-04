@@ -92,7 +92,7 @@ export function ExpensesPage({ trip, onAddExpense, onDeleteExpense }: ExpensesPa
                 {trip.members.map((member) => (
                   <label key={member.id}>
                     {member.name}
-                    <input type="number" name={`share-${member.id}`} min="0" step="0.01" placeholder="0,00" />
+                    <input type="number" name={`share-${member.id}`} min="0" step="0.01" />
                   </label>
                 ))}
               </div>

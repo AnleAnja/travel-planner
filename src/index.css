@@ -1147,6 +1147,13 @@ textarea:focus {
   font-size: 12px;
 }
 
+.invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .member-row {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -1154,6 +1161,19 @@ textarea:focus {
   gap: 12px;
   border-bottom: 1px solid #ebe8df;
   padding: 14px 0;
+}
+
+.name-edit-form {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px 0 4px;
+}
+
+.name-edit-form .form-error {
+  grid-column: 1 / -1;
+  margin: 0;
 }
 
 .status {
@@ -1431,6 +1451,10 @@ textarea:focus {
   .invite-card {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .name-edit-form {
+    grid-template-columns: 1fr;
   }
 
   .form-grid,

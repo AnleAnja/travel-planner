@@ -106,7 +106,6 @@ export function OverviewPage({ trip, currentMemberId, onAddNote }: OverviewPageP
           <input
             value={note}
             onChange={(event) => setNote(event.target.value)}
-            placeholder="[Neue Idee oder Notiz]"
             aria-label="Neue Notiz"
           />
           <button className="primary-button" type="submit">

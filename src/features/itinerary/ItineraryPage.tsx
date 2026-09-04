@@ -67,7 +67,6 @@ export function ItineraryPage({
               label="Google-Maps-Link"
               name="locationUrl"
               type="url"
-              placeholder="[Vollständiger Google-Maps-Link]"
               required
             />
             <Field label="Datum" name="date" type="date" defaultValue={trip.startsOn} required />
