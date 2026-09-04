@@ -98,7 +98,6 @@ export function BookingsPage({ trip, onAddBooking, onDeleteBooking }: BookingsPa
             <Field
               label="Buchungsnummer"
               name="confirmationNumber"
-              placeholder="[Buchungsnummer]"
             />
             <Field label="Beginn / Check-in" name="startsAt" type="datetime-local" required />
             <Field label="Ende / Check-out" name="endsAt" type="datetime-local" />
@@ -107,7 +106,6 @@ export function BookingsPage({ trip, onAddBooking, onDeleteBooking }: BookingsPa
               label="Link zur Buchung"
               name="bookingUrl"
               type="url"
-              placeholder="[Link zur Buchung]"
             />
             <label className="full-field">
               Notizen

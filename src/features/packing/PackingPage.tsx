@@ -51,7 +51,7 @@ export function PackingPage({
     <div className="page-content">
       <PageIntro
         title="Packliste"
-        text="Gemeinsam organisiert, persönlich vorbereitet."
+        text=""
         action={<button className="primary-button" onClick={() => setShowForm(true)}><Plus /> Eintrag</button>}
       />
       <div className="progress-card">

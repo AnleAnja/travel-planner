@@ -8,6 +8,7 @@ import type {
   TripNote,
 } from '../types'
 import { loadRemoteTrips } from './remote-trips'
+import { isPlaceholderName } from './names'
 import { currentMemberId as demoMemberId, demoTrips } from './seed'
 import {
   ensureAnonymousSession,
@@ -17,10 +18,11 @@ import {
 
 const storageKey = 'reiseplaner.trips.v2'
 const invitationStorageKey = 'reiseplaner.invitation-codes.v1'
+const displayNameStorageKey = 'reiseplaner.display-name.v1'
 const channelName = 'reiseplaner-updates-v2'
-const displayName = '[Dein Name]'
 
 function loadLocalTrips() {
+  if (isSupabaseConfigured) return []
   try {
     const stored = localStorage.getItem(storageKey)
     const trips = stored ? (JSON.parse(stored) as Trip[]) : demoTrips
@@ -30,11 +32,58 @@ function loadLocalTrips() {
   }
 }
 
+function loadStoredDisplayName() {
+  try {
+    const stored = localStorage.getItem(displayNameStorageKey)?.trim() ?? ''
+    if (!stored || isPlaceholderName(stored)) {
+      if (stored) localStorage.removeItem(displayNameStorageKey)
+      return ''
+    }
+    return stored
+  } catch {
+    return ''
+  }
+}
+
+function saveStoredDisplayName(name: string) {
+  if (isPlaceholderName(name)) {
+    localStorage.removeItem(displayNameStorageKey)
+    return
+  }
+  localStorage.setItem(displayNameStorageKey, name)
+}
+
+export type JoinTripResult =
+  | { ok: true }
+  | { ok: false; error: string }
+
 export function useTravelStore() {
   const [trips, setTrips] = useState<Trip[]>(loadLocalTrips)
   const [activeTripId, setActiveTripId] = useState(() => trips[0]?.id ?? '')
   const [currentMemberId, setCurrentMemberId] = useState(demoMemberId)
+  const [displayName, setDisplayName] = useState(loadStoredDisplayName)
   const [syncError, setSyncError] = useState('')
+
+  const applyDisplayName = useCallback((name: string) => {
+    const trimmed = name.trim().slice(0, 60)
+    if (!trimmed || isPlaceholderName(trimmed)) return
+    setDisplayName(trimmed)
+    saveStoredDisplayName(trimmed)
+  }, [])
+
+  const renameMemberLocally = useCallback(
+    (memberId: string, name: string) => {
+      setTrips((current) =>
+        current.map((trip) => ({
+          ...trip,
+          members: trip.members.map((member) =>
+            member.id === memberId ? { ...member, name } : member,
+          ),
+        })),
+      )
+    },
+    [],
+  )
 
   const reloadRemote = useCallback(async () => {
     if (!supabase) return
@@ -65,10 +114,15 @@ export function useTravelStore() {
       .then(async (session) => {
         if (!session || !active) return
         setCurrentMemberId(session.user.id)
-        await client.from('profiles').upsert({
-          user_id: session.user.id,
-          display_name: displayName,
-        })
+        const { data: profile } = await client
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', session.user.id)
+          .maybeSingle()
+        if (!active) return
+        if (profile?.display_name) {
+          applyDisplayName(String(profile.display_name))
+        }
         await reloadRemote()
       })
       .catch((error) => {
@@ -89,7 +143,7 @@ export function useTravelStore() {
       active = false
       void client.removeChannel(channel)
     }
-  }, [reloadRemote])
+  }, [applyDisplayName, reloadRemote])
 
   useEffect(() => {
     if (isSupabaseConfigured) return
@@ -134,6 +188,26 @@ export function useTravelStore() {
     [reloadRemote],
   )
 
+  const upsertProfileName = useCallback(
+    async (name: string, userId = currentMemberId) => {
+      const trimmed = name.trim().slice(0, 60)
+      if (!trimmed || !supabase) return false
+      const { error } = await supabase.from('profiles').upsert({
+        user_id: userId,
+        display_name: trimmed,
+      })
+      if (error) {
+        console.error(error)
+        setSyncError('Der Anzeigename konnte nicht gespeichert werden.')
+        return false
+      }
+      applyDisplayName(trimmed)
+      renameMemberLocally(userId, trimmed)
+      return true
+    },
+    [applyDisplayName, currentMemberId, renameMemberLocally],
+  )
+
   const createTrip = useCallback(
     async (
       trip: Omit<
@@ -147,8 +221,19 @@ export function useTravelStore() {
         | 'expenses'
         | 'notes'
       >,
+      ownerName: string,
     ) => {
+      const name = ownerName.trim().slice(0, 60)
+      if (!name || isPlaceholderName(name)) return false
+
       if (supabase) {
+        const { data: userData } = await supabase.auth.getUser()
+        const userId = userData.user?.id ?? currentMemberId
+        if (userId !== currentMemberId) setCurrentMemberId(userId)
+
+        const profileSaved = await upsertProfileName(name, userId)
+        if (!profileSaved) return false
+
         const { data, error } = await supabase.rpc('create_trip', {
           trip_title: trip.title,
           trip_destination: trip.destination,
@@ -161,20 +246,25 @@ export function useTravelStore() {
         })
         if (error) {
           setSyncError('Die Reise konnte nicht erstellt werden.')
-          return
+          return false
         }
-        const { data: invitation } = await supabase.rpc(
+        const { data: invitation, error: invitationError } = await supabase.rpc(
           'create_trip_invitation',
           { requested_trip_id: data.id },
         )
-        const inviteCode = invitation?.[0]?.code ?? ''
+        if (invitationError) {
+          console.error(invitationError)
+          setSyncError('Die Einladung konnte nicht erstellt werden.')
+        }
+        const inviteCode = readInvitationCode(invitation)
         if (inviteCode) saveInvitationCode(data.id, inviteCode)
         await reloadRemote()
         setActiveTripId(data.id)
-        return
+        return true
       }
 
       const id = crypto.randomUUID()
+      applyDisplayName(name)
       const created: Trip = {
         ...trip,
         id,
@@ -182,7 +272,7 @@ export function useTravelStore() {
         members: [
           {
             id: currentMemberId,
-            name: displayName,
+            name,
             role: 'owner',
             color: '#e86f51',
           },
@@ -195,44 +285,110 @@ export function useTravelStore() {
       }
       setTrips((current) => [...current, created])
       setActiveTripId(id)
+      return true
     },
-    [currentMemberId, reloadRemote],
+    [applyDisplayName, currentMemberId, reloadRemote, upsertProfileName],
   )
 
   const joinTrip = useCallback(
-    async (code: string, name: string) => {
+    async (code: string, name: string): Promise<JoinTripResult> => {
+      const trimmedName = name.trim().slice(0, 60)
+      if (!trimmedName || isPlaceholderName(trimmedName)) {
+        return { ok: false, error: 'Bitte gib deinen Namen ein.' }
+      }
+
       if (supabase) {
-        const { data, error } = await supabase.functions.invoke('join-trip', {
-          body: { code, displayName: name },
+        try {
+          await ensureAnonymousSession()
+        } catch (error) {
+          console.error(error)
+          return { ok: false, error: 'Anmeldung fehlgeschlagen. Bitte neu laden.' }
+        }
+
+        const { data: tripId, error } = await supabase.rpc('join_trip_with_code', {
+          raw_code: code.trim(),
+          member_display_name: trimmedName,
         })
-        if (error || !data?.tripId) return false
+
+        if (error || !tripId) {
+          const message = error?.message ?? ''
+          if (message.includes('Invitation invalid or expired')) {
+            return {
+              ok: false,
+              error: 'Einladung ungültig oder abgelaufen. Erzeuge unter Personen einen neuen Code.',
+            }
+          }
+          if (message.includes('Authentication required')) {
+            return { ok: false, error: 'Anmeldung fehlgeschlagen. Bitte neu laden.' }
+          }
+          console.error(error)
+          return {
+            ok: false,
+            error:
+              error?.message ||
+              'Beitritt fehlgeschlagen. Prüfe den Code oder erzeuge einen neuen.',
+          }
+        }
+
+        applyDisplayName(trimmedName)
         await reloadRemote()
-        setActiveTripId(data.tripId)
-        return true
+        setActiveTripId(String(tripId))
+        return { ok: true }
       }
 
       const match = trips.find(
         (trip) => trip.inviteCode.toLowerCase() === code.trim().toLowerCase(),
       )
-      if (!match) return false
+      if (!match) {
+        return {
+          ok: false,
+          error: 'Diesen Einladungscode konnten wir nicht finden.',
+        }
+      }
+      applyDisplayName(trimmedName)
       updateTrip(setTrips, match.id, (trip) => ({
         ...trip,
         members: trip.members.some((member) => member.id === currentMemberId)
-          ? trip.members
+          ? trip.members.map((member) =>
+              member.id === currentMemberId
+                ? { ...member, name: trimmedName }
+                : member,
+            )
           : [
               ...trip.members,
               {
                 id: currentMemberId,
-                name,
+                name: trimmedName,
                 role: 'member',
                 color: '#e86f51',
               },
             ],
       }))
       setActiveTripId(match.id)
+      return { ok: true }
+    },
+    [applyDisplayName, currentMemberId, reloadRemote, trips],
+  )
+
+  const updateDisplayName = useCallback(
+    async (name: string) => {
+      const trimmed = name.trim().slice(0, 60)
+      if (!trimmed) return false
+
+      if (supabase) {
+        return upsertProfileName(trimmed)
+      }
+
+      applyDisplayName(trimmed)
+      renameMemberLocally(currentMemberId, trimmed)
       return true
     },
-    [currentMemberId, reloadRemote, trips],
+    [
+      applyDisplayName,
+      currentMemberId,
+      renameMemberLocally,
+      upsertProfileName,
+    ],
   )
 
   const createInvitation = useCallback(async () => {
@@ -242,11 +398,11 @@ export function useTravelStore() {
     const { data, error } = await supabase.rpc('create_trip_invitation', {
       requested_trip_id: activeTrip.id,
     })
-    if (error || !data?.[0]?.code) {
+    const code = readInvitationCode(data)
+    if (error || !code) {
       setSyncError('Die Einladung konnte nicht erstellt werden.')
       return ''
     }
-    const code = data[0].code as string
     saveInvitationCode(activeTrip.id, code)
     updateActiveTrip((trip) => ({ ...trip, inviteCode: code }))
     return code
@@ -352,11 +508,13 @@ export function useTravelStore() {
     activeTrip,
     activeTripId,
     currentMemberId,
+    displayName,
     syncError,
     isDemoMode: !isSupabaseConfigured,
     setActiveTripId,
     createTrip,
     joinTrip,
+    updateDisplayName,
     createInvitation,
     addActivity,
     deleteActivity: (id: string) => {
@@ -428,6 +586,31 @@ function loadInvitationCodes(): Record<string, string> {
   } catch {
     return {}
   }
+}
+
+function readInvitationCode(data: unknown) {
+  if (!data) return ''
+
+  let payload = data
+  if (typeof data === 'string') {
+    try {
+      payload = JSON.parse(data)
+    } catch {
+      return ''
+    }
+  }
+
+  if (Array.isArray(payload)) {
+    const first = payload[0] as { code?: unknown } | undefined
+    return typeof first?.code === 'string' ? first.code : ''
+  }
+
+  if (typeof payload === 'object' && payload !== null && 'code' in payload) {
+    const code = (payload as { code?: unknown }).code
+    return typeof code === 'string' ? code : ''
+  }
+
+  return ''
 }
 
 function saveInvitationCode(tripId: string, code: string) {

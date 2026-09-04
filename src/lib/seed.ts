@@ -24,7 +24,7 @@ export const demoTrips: Trip[] = [
     members: [
       {
         id: currentMemberId,
-        name: '[Dein Name]',
+        name: '',
         role: 'owner',
         color: '#e86f51',
       },

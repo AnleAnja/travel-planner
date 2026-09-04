@@ -7,15 +7,30 @@ function App() {
   const store = useTravelStore()
   const invitedCode = useInviteCode()
   const isOnline = useOnlineStatus()
+  const tripMember = store.activeTrip?.members.find(
+    (member) => member.id === store.currentMemberId,
+  )
+  const currentMember = tripMember
+    ? {
+        ...tripMember,
+        name: store.displayName || tripMember.name,
+      }
+    : store.displayName
+      ? {
+          id: store.currentMemberId,
+          name: store.displayName,
+          role: 'member' as const,
+          color: '#70807a',
+        }
+      : undefined
 
   return (
     <AppShell
       trips={store.trips}
       activeTrip={store.activeTrip}
       activeTripId={store.activeTripId}
-      currentMember={store.activeTrip?.members.find(
-        (member) => member.id === store.currentMemberId,
-      )}
+      currentMember={currentMember}
+      displayName={store.displayName}
       invitedCode={invitedCode ?? ''}
       isOnline={isOnline}
       syncError={store.syncError}
@@ -48,6 +63,7 @@ function App() {
       people={{
         currentMemberId: store.currentMemberId,
         onCreateInvitation: store.createInvitation,
+        onUpdateDisplayName: store.updateDisplayName,
       }}
     />
   )

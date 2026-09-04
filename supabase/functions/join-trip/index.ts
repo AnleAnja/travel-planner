@@ -28,68 +28,46 @@ Deno.serve(async (request) => {
     if (!authorization) return json({ error: 'Nicht angemeldet.' }, 401)
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const admin = createClient(supabaseUrl, serviceRoleKey)
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authorization } },
+    })
+
     const token = authorization.replace(/^Bearer\s+/i, '')
-    const { data: userData, error: userError } = await admin.auth.getUser(token)
+    const { data: userData, error: userError } = await userClient.auth.getUser(token)
     if (userError || !userData.user) return json({ error: 'Sitzung ungültig.' }, 401)
 
     const { code, displayName } = (await request.json()) as {
       code?: string
       displayName?: string
     }
-    const normalizedCode = code?.trim().toUpperCase()
-    if (!normalizedCode || !displayName?.trim()) {
+    if (!code?.trim() || !displayName?.trim()) {
       return json({ error: 'Code und Anzeigename sind erforderlich.' }, 400)
     }
 
-    const codeHash = await sha256(normalizedCode)
-    const { data: invitation } = await admin
-      .from('trip_invitations')
-      .select('id, trip_id, use_count, max_uses, expires_at, revoked_at')
-      .eq('code_hash', codeHash)
-      .is('revoked_at', null)
-      .gt('expires_at', new Date().toISOString())
-      .maybeSingle()
+    const { data: tripId, error: joinError } = await userClient.rpc(
+      'join_trip_with_code',
+      {
+        raw_code: code.trim(),
+        member_display_name: displayName.trim(),
+      },
+    )
 
-    if (
-      !invitation ||
-      (invitation.max_uses !== null &&
-        invitation.use_count >= invitation.max_uses)
-    ) {
-      return json({ error: 'Einladung ungültig oder abgelaufen.' }, 404)
+    if (joinError) {
+      const message = joinError.message ?? ''
+      if (message.includes('Invitation invalid or expired')) {
+        return json({ error: 'Einladung ungültig oder abgelaufen.' }, 404)
+      }
+      console.error(joinError)
+      return json({ error: 'Beitritt fehlgeschlagen.' }, 500)
     }
 
-    const { error: memberError } = await admin.from('trip_members').upsert({
-      trip_id: invitation.trip_id,
-      user_id: userData.user.id,
-      role: 'member',
-    })
-    if (memberError) throw memberError
-
-    await admin.from('profiles').upsert({
-      user_id: userData.user.id,
-      display_name: displayName.trim().slice(0, 60),
-    })
-    await admin
-      .from('trip_invitations')
-      .update({ use_count: invitation.use_count + 1 })
-      .eq('id', invitation.id)
-
-    return json({ tripId: invitation.trip_id })
+    return json({ tripId })
   } catch (error) {
     console.error(error)
     return json({ error: 'Beitritt fehlgeschlagen.' }, 500)
   }
 })
-
-async function sha256(value: string) {
-  const bytes = new TextEncoder().encode(value)
-  const hash = await crypto.subtle.digest('SHA-256', bytes)
-  return Array.from(new Uint8Array(hash))
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('')
-}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
