@@ -68,7 +68,7 @@ export async function loadRemoteTrips(client: SupabaseClient): Promise<Trip[]> {
         (member, index): Member => ({
           id: member.user_id,
           name:
-            profileNames.get(member.user_id) ?? `[Gast ${index + 1}]`,
+            profileNames.get(member.user_id) ?? `[Guest ${index + 1}]`,
           role: member.role,
           color: memberColor(member.user_id),
         }),

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Dialog, Field, FormActions } from '../components/ui'
+import type { ActionResult } from '../lib/invitations'
 import { isPlaceholderName } from '../lib/names'
-import type { JoinTripResult } from '../lib/use-travel-store'
 
 export function JoinTripDialog({
   initialCode,
@@ -11,7 +11,7 @@ export function JoinTripDialog({
 }: {
   initialCode: string
   onClose: () => void
-  onJoin: (code: string, name: string) => Promise<JoinTripResult>
+  onJoin: (code: string, name: string) => Promise<ActionResult>
   defaultName?: string
 }) {
   const [error, setError] = useState('')
@@ -28,20 +28,20 @@ export function JoinTripDialog({
   }
 
   return (
-    <Dialog title="Reise beitreten" onClose={onClose}>
+    <Dialog title="Join a trip" onClose={onClose}>
       <p className="dialog-copy">
-        Gib den Einladungscode und den Namen ein, den deine Reisegruppe sehen soll.
+        Enter the invite code and the name your travel group should see.
       </p>
       <form className="form-grid" onSubmit={submit}>
         <Field
-          label="Einladungscode"
+          label="Invite code"
           name="code"
           defaultValue={initialCode}
           required
           autoCapitalize="characters"
         />
         <Field
-          label="Dein Name"
+          label="Your name"
           name="name"
           defaultValue={name}
           autoComplete="nickname"

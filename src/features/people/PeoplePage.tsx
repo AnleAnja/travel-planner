@@ -26,37 +26,54 @@ export function PeoplePage({
     (member) => member.id === currentMemberId,
   )
 
+  async function copyInviteLink(code: string) {
+    const url = `${window.location.origin}${window.location.pathname}#/join?code=${code}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1800)
+    } catch {
+      setInviteError(
+        'Could not copy the link. Your new code is still shown above.',
+      )
+    }
+  }
+
   async function copyInvite() {
     setInviteError('')
     let code = trip.inviteCode
-    if (!code) {
-      setCreatingCode(true)
-      code = await onCreateInvitation()
-      setCreatingCode(false)
+    try {
       if (!code) {
-        setInviteError('Der Einladungscode konnte nicht erzeugt werden.')
-        return
+        setCreatingCode(true)
+        code = await onCreateInvitation()
+        if (!code) {
+          setInviteError('The invite code could not be created.')
+          return
+        }
       }
+      await copyInviteLink(code)
+    } catch {
+      setInviteError('The invite code could not be created.')
+    } finally {
+      setCreatingCode(false)
     }
-    const url = `${window.location.origin}${window.location.pathname}#/join?code=${code}`
-    await navigator.clipboard.writeText(url)
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 1800)
   }
 
   async function regenerateInvite() {
     setInviteError('')
     setCreatingCode(true)
-    const code = await onCreateInvitation()
-    setCreatingCode(false)
-    if (!code) {
-      setInviteError('Der Einladungscode konnte nicht erzeugt werden.')
-      return
+    try {
+      const code = await onCreateInvitation()
+      if (!code) {
+        setInviteError('The invite code could not be created.')
+        return
+      }
+      await copyInviteLink(code)
+    } catch {
+      setInviteError('The invite code could not be created.')
+    } finally {
+      setCreatingCode(false)
     }
-    const url = `${window.location.origin}${window.location.pathname}#/join?code=${code}`
-    await navigator.clipboard.writeText(url)
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 1800)
   }
 
   async function saveName(event: FormEvent<HTMLFormElement>) {
@@ -64,12 +81,12 @@ export function PeoplePage({
     const data = new FormData(event.currentTarget)
     const name = String(data.get('displayName')).trim()
     if (!name) {
-      setNameError('Bitte gib einen Namen ein.')
+      setNameError('Please enter a name.')
       return
     }
     const saved = await onUpdateDisplayName(name)
     if (!saved) {
-      setNameError('Der Name konnte nicht gespeichert werden.')
+      setNameError('The name could not be saved.')
       return
     }
     setNameError('')
@@ -78,14 +95,14 @@ export function PeoplePage({
 
   return (
     <div className="page-content">
-      <PageIntro title="Eure Reisegruppe" text="Alle Mitreisenden und Einladungen verwalten." />
+      <PageIntro title="Your travel group" text="Everyone traveling with you, plus invites." />
       <section className="invite-card">
         <div>
-          <span className="eyebrow">Einladungscode</span>
-          <strong>{trip.inviteCode || 'Noch kein Code'}</strong>
+          <span className="eyebrow">Invite code</span>
+          <strong>{trip.inviteCode || 'No code yet'}</strong>
           <p>
-            Teile den Link oder Code mit Mitreisenden. Ein neuer Code ersetzt den
-            bisherigen; alte Links funktionieren dann nicht mehr.
+            Share the link or code with fellow travelers. A new code replaces
+            the previous one; old links then stop working.
           </p>
           {inviteError && (
             <p className="form-error" role="alert">
@@ -101,10 +118,10 @@ export function PeoplePage({
           >
             {copied ? <Check /> : <Copy />}
             {copied
-              ? 'Kopiert'
+              ? 'Copied'
               : trip.inviteCode
-                ? 'Link kopieren'
-                : 'Code erzeugen'}
+                ? 'Copy link'
+                : 'Create code'}
           </button>
           {trip.inviteCode && (
             <button
@@ -113,13 +130,13 @@ export function PeoplePage({
               disabled={creatingCode}
             >
               <RefreshCw />
-              Neu erzeugen
+              Create new
             </button>
           )}
         </div>
       </section>
       <section className="card members-card">
-        <div className="section-heading"><h2>{trip.members.length} Reisende</h2><Users /></div>
+        <div className="section-heading"><h2>{trip.members.length} travelers</h2><Users /></div>
         {trip.members.map((member) => {
           const isCurrent = member.id === currentMemberId
           return (
@@ -128,20 +145,20 @@ export function PeoplePage({
               <div>
                 <strong>
                   {member.name}
-                  {isCurrent && ' (Du)'}
+                  {isCurrent && ' (You)'}
                 </strong>
-                <span>{member.role === 'owner' ? 'Owner' : 'Mitglied'}</span>
+                <span>{member.role === 'owner' ? 'Owner' : 'Member'}</span>
               </div>
               {isCurrent ? (
                 <button
                   className="icon-button subtle"
                   onClick={() => setEditingName((open) => !open)}
-                  aria-label="Namen bearbeiten"
+                  aria-label="Edit name"
                 >
                   <Pencil />
                 </button>
               ) : (
-                <span className="status">Aktiv</span>
+                <span className="status">Active</span>
               )}
             </div>
           )
@@ -149,7 +166,7 @@ export function PeoplePage({
         {editingName && (
           <form className="inline-form name-edit-form" onSubmit={saveName}>
             <Field
-              label="Dein Name"
+              label="Your name"
               name="displayName"
               defaultValue={
                 currentMember && !isPlaceholderName(currentMember.name)
@@ -160,7 +177,7 @@ export function PeoplePage({
               maxLength={60}
             />
             <button className="primary-button" type="submit">
-              Speichern
+              Save
             </button>
             <button
               className="secondary-button"
@@ -170,7 +187,7 @@ export function PeoplePage({
                 setNameError('')
               }}
             >
-              Abbrechen
+              Cancel
             </button>
             {nameError && (
               <p className="form-error" role="alert">

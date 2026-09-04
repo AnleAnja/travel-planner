@@ -13,7 +13,7 @@ export function Brand() {
       <div className="brand-mark">
         <Route aria-hidden="true" />
       </div>
-      <span>Reise Planner</span>
+      <span>Travel Planner</span>
     </div>
   )
 }
@@ -79,7 +79,7 @@ export function EditorCard({
     <section className="card editor-card">
       <div className="section-heading">
         <h2>{title}</h2>
-        <button className="icon-button" onClick={onClose} aria-label="Schließen">
+        <button className="icon-button" onClick={onClose} aria-label="Close">
           <X />
         </button>
       </div>
@@ -103,10 +103,10 @@ export function FormActions({ onCancel }: { onCancel: () => void }) {
   return (
     <div className="form-actions full-field">
       <button type="button" className="secondary-button" onClick={onCancel}>
-        Abbrechen
+        Cancel
       </button>
       <button type="submit" className="primary-button">
-        Speichern
+        Save
       </button>
     </div>
   )
@@ -154,7 +154,7 @@ export function Dialog({
       <section className="dialog">
         <div className="section-heading">
           <h2 id={titleId}>{title}</h2>
-          <button className="icon-button" onClick={onClose} aria-label="Schließen">
+          <button className="icon-button" onClick={onClose} aria-label="Close">
             <X />
           </button>
         </div>

@@ -32,7 +32,7 @@ export function ItineraryPage({
     const locationUrl = String(data.get('locationUrl'))
     if (!isGoogleMapsLink(locationUrl)) {
       setLocationError(
-        'Bitte füge einen vollständigen Google-Maps-Link ein. Kurzlinks werden noch nicht unterstützt.',
+        'Please paste a full Google Maps link. Short links are not supported yet.',
       )
       return
     }
@@ -51,29 +51,29 @@ export function ItineraryPage({
   return (
     <div className="page-content">
       <PageIntro
-        title="Euer Tagesplan"
-        text="Alle Pläne, Uhrzeiten und Orte."
+        title="Day plan"
+        text="Plans, times, and places for each day."
         action={
           <button className="primary-button" onClick={() => setShowForm(true)}>
-            <Plus /> Aktivität
+            <Plus /> Activity
           </button>
         }
       />
       {showForm && (
-        <EditorCard title="Aktivität hinzufügen" onClose={() => setShowForm(false)}>
+        <EditorCard title="Add activity" onClose={() => setShowForm(false)}>
           <form className="form-grid" onSubmit={submit}>
-            <Field label="Titel" name="title" required />
+            <Field label="Title" name="title" required />
             <Field
-              label="Google-Maps-Link"
+              label="Google Maps link"
               name="locationUrl"
               type="url"
               required
             />
-            <Field label="Datum" name="date" type="date" defaultValue={trip.startsOn} required />
-            <Field label="Uhrzeit" name="time" type="time" required />
+            <Field label="Date" name="date" type="date" defaultValue={trip.startsOn} required />
+            <Field label="Time" name="time" type="time" required />
             {locationError && <p className="form-error full-field" role="alert">{locationError}</p>}
             <label className="full-field">
-              Notiz
+              Note
               <textarea name="notes" rows={3} />
             </label>
             <FormActions onCancel={() => setShowForm(false)} />
@@ -95,21 +95,21 @@ export function ItineraryPage({
                     <h3>{activity.title}</h3>
                     <a href={activity.locationUrl} target="_blank" rel="noreferrer">
                       <MapPin size={15} />
-                      In Google Maps öffnen
+                      Open in Google Maps
                     </a>
                     {activity.notes && <p>{activity.notes}</p>}
                   </div>
                   <button
                     className="icon-button subtle"
                     onClick={() => onDeleteActivity(activity.id)}
-                    aria-label={`${activity.title} löschen`}
+                    aria-label={`Delete ${activity.title}`}
                   >
                     <Trash2 />
                   </button>
                   <iframe
                     className="activity-map"
                     src={getGoogleMapsEmbedUrl(activity.locationUrl)}
-                    title={`Karte für ${activity.title}`}
+                    title={`Map for ${activity.title}`}
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
                   />

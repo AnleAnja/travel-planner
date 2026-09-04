@@ -23,17 +23,17 @@ interface Forecast {
 }
 
 const weatherLabels: Record<number, string> = {
-  0: 'Klar',
-  1: 'Überwiegend klar',
-  2: 'Leicht bewölkt',
-  3: 'Bewölkt',
-  45: 'Nebel',
-  51: 'Leichter Nieselregen',
-  61: 'Leichter Regen',
-  63: 'Regen',
-  65: 'Starker Regen',
-  80: 'Regenschauer',
-  95: 'Gewitter',
+  0: 'Clear',
+  1: 'Mostly clear',
+  2: 'Partly cloudy',
+  3: 'Cloudy',
+  45: 'Fog',
+  51: 'Light drizzle',
+  61: 'Light rain',
+  63: 'Rain',
+  65: 'Heavy rain',
+  80: 'Showers',
+  95: 'Thunderstorm',
 }
 
 async function getForecast(latitude: number, longitude: number) {
@@ -61,7 +61,7 @@ async function getForecast(latitude: number, longitude: number) {
   url.searchParams.set('forecast_days', '7')
 
   const response = await fetch(url)
-  if (!response.ok) throw new Error('Wetter konnte nicht geladen werden.')
+  if (!response.ok) throw new Error('Weather could not be loaded.')
   return (await response.json()) as Forecast
 }
 
@@ -77,7 +77,7 @@ export function WeatherCard({
   })
 
   if (forecast.isPending) {
-    return <div className="weather-card skeleton" aria-label="Wetter wird geladen" />
+    return <div className="weather-card skeleton" aria-label="Loading weather" />
   }
 
   if (forecast.isError) {
@@ -85,8 +85,8 @@ export function WeatherCard({
       <div className="weather-card">
         <CloudSun aria-hidden="true" />
         <div>
-          <strong>Wetter gerade nicht verfügbar</strong>
-          <p className="muted">Versuche es später noch einmal.</p>
+          <strong>Weather is unavailable right now</strong>
+          <p className="muted">Try again later.</p>
         </div>
       </div>
     )
@@ -102,7 +102,7 @@ export function WeatherCard({
         <div>
           <span className="eyebrow">{destination}</span>
           <h2 id="weather-title">{Math.round(data.current.temperature_2m)}°</h2>
-          <p>{weatherLabels[data.daily.weather_code[0]] ?? 'Wechselhaft'}</p>
+          <p>{weatherLabels[data.daily.weather_code[0]] ?? 'Mixed'}</p>
         </div>
       </div>
       <div className="weather-detail">
@@ -119,7 +119,7 @@ export function WeatherCard({
         {data.daily.time.slice(1, 5).map((day, index) => (
           <div key={day}>
             <span>
-              {new Intl.DateTimeFormat('de-DE', { weekday: 'short' }).format(
+              {new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(
                 new Date(`${day}T12:00:00`),
               )}
             </span>
@@ -134,7 +134,7 @@ export function WeatherCard({
         target="_blank"
         rel="noreferrer"
       >
-        Wetterdaten: Open-Meteo
+        Weather data: Open-Meteo
       </a>
     </section>
   )

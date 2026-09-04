@@ -67,7 +67,7 @@ export function calculateSettlements(
 }
 
 export function formatMoney(amountCents: number, currency = 'EUR') {
-  return new Intl.NumberFormat('de-DE', {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
   }).format(amountCents / 100)

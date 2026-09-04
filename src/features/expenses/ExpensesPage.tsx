@@ -34,7 +34,7 @@ export function ExpensesPage({ trip, onAddExpense, onDeleteExpense }: ExpensesPa
       hasManualShares &&
       manualShares.reduce((sum, share) => sum + share.amountCents, 0) !== amountCents
     ) {
-      setExpenseError('Die individuellen Anteile müssen zusammen dem Gesamtbetrag entsprechen.')
+      setExpenseError('Custom shares must add up to the total amount.')
       return
     }
     onAddExpense({
@@ -52,29 +52,29 @@ export function ExpensesPage({ trip, onAddExpense, onDeleteExpense }: ExpensesPa
   return (
     <div className="page-content">
       <PageIntro
-        title="Gemeinsame Ausgaben"
-        text=""
-        action={<button className="primary-button" onClick={() => setShowForm(true)}><Plus /> Ausgabe</button>}
+        title="Shared expenses"
+        text="Track who paid, and settle up to the cent."
+        action={<button className="primary-button" onClick={() => setShowForm(true)}><Plus /> Expense</button>}
       />
       <section className="balance-hero">
-        <span>Gesamtausgaben</span>
+        <span>Total spent</span>
         <strong>{formatMoney(total, trip.currency)}</strong>
-        <small>{trip.expenses.length} Einträge</small>
+        <small>{trip.expenses.length} entries</small>
       </section>
       {showForm && (
-        <EditorCard title="Ausgabe erfassen" onClose={() => setShowForm(false)}>
+        <EditorCard title="Add expense" onClose={() => setShowForm(false)}>
           <form className="form-grid" onSubmit={submit}>
-            <Field label="Beschreibung" name="description" required />
-            <Field label="Betrag" name="amount" type="number" step="0.01" min="0.01" required />
+            <Field label="Description" name="description" required />
+            <Field label="Amount" name="amount" type="number" step="0.01" min="0.01" required />
             <label>
-              Bezahlt von
+              Paid by
               <select name="paidBy">
                 {trip.members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
               </select>
             </label>
-            <Field label="Datum" name="date" type="date" defaultValue={trip.startsOn} required />
+            <Field label="Date" name="date" type="date" defaultValue={trip.startsOn} required />
             <fieldset className="full-field participant-field">
-              <legend>Gleichmäßig aufteilen zwischen</legend>
+              <legend>Split evenly between</legend>
               {trip.members.map((member) => (
                 <label key={member.id}>
                   <input type="checkbox" name={`member-${member.id}`} defaultChecked />
@@ -83,10 +83,10 @@ export function ExpensesPage({ trip, onAddExpense, onDeleteExpense }: ExpensesPa
               ))}
             </fieldset>
             <fieldset className="full-field manual-share-field">
-              <legend>Individuelle Anteile (optional)</legend>
+              <legend>Custom shares (optional)</legend>
               <p>
-                Leer lassen für eine gleichmäßige Aufteilung. Bei eigenen
-                Beträgen muss die Summe dem Gesamtbetrag entsprechen.
+                Leave blank for an even split. If you enter amounts, they must
+                add up to the total.
               </p>
               <div>
                 {trip.members.map((member) => (
@@ -104,7 +104,7 @@ export function ExpensesPage({ trip, onAddExpense, onDeleteExpense }: ExpensesPa
       )}
       <div className="expenses-layout">
         <section className="card">
-          <div className="section-heading"><h2>Ausgaben</h2><ReceiptText /></div>
+          <div className="section-heading"><h2>Expenses</h2><ReceiptText /></div>
           <div className="expense-list">
             {trip.expenses.map((expense) => {
               const payer = trip.members.find((member) => member.id === expense.paidBy)
@@ -113,13 +113,13 @@ export function ExpensesPage({ trip, onAddExpense, onDeleteExpense }: ExpensesPa
                   <div className="receipt-icon"><ReceiptText /></div>
                   <div>
                     <strong>{expense.description}</strong>
-                    <span>{payer?.name} hat bezahlt · {formatShortDate(expense.date)}</span>
+                    <span>{payer?.name} paid · {formatShortDate(expense.date)}</span>
                   </div>
                   <strong>{formatMoney(expense.amountCents, trip.currency)}</strong>
                   <button
                     className="icon-button subtle"
                     onClick={() => onDeleteExpense(expense.id)}
-                    aria-label={`${expense.description} löschen`}
+                    aria-label={`Delete ${expense.description}`}
                   >
                     <Trash2 />
                   </button>
@@ -130,15 +130,15 @@ export function ExpensesPage({ trip, onAddExpense, onDeleteExpense }: ExpensesPa
         </section>
         <section className="card settlement-card">
           <div className="section-heading">
-            <div><span className="eyebrow">Abrechnung</span><h2>So seid ihr quitt</h2></div>
+            <div><span className="eyebrow">Settling up</span><h2>Who owes whom</h2></div>
             <Banknote />
           </div>
           {settlements.length === 0 ? (
-            <p className="empty-state">Alles ausgeglichen.</p>
+            <p className="empty-state">Everyone is even.</p>
           ) : settlements.map((settlement) => (
             <div className="settlement" key={`${settlement.from.id}-${settlement.to.id}`}>
               <Avatar name={settlement.from.name} color={settlement.from.color} />
-              <span><strong>{settlement.from.name}</strong> zahlt <strong>{settlement.to.name}</strong></span>
+              <span><strong>{settlement.from.name}</strong> pays <strong>{settlement.to.name}</strong></span>
               <strong>{formatMoney(settlement.amountCents, trip.currency)}</strong>
             </div>
           ))}

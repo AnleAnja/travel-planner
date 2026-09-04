@@ -40,10 +40,10 @@ export function OverviewPage({ trip, currentMemberId, onAddNote }: OverviewPageP
       <section className="hero-card">
         <div>
           <span className="eyebrow">{formatTripCountdown(trip.startsOn)}</span>
-          <h2>Willkommen in {destinationName}!</h2>
+          <h2>Welcome to {destinationName}!</h2>
           <p>
-            Alles Wichtige für eure Reise an einem Ort. Packt gemeinsam,
-            plant entspannt und behaltet die Kosten im Blick.
+            Everything for this trip in one place. Pack together, plan at your
+            pace, and keep an eye on the costs.
           </p>
         </div>
         <div className="hero-stamp">{destinationName.slice(0, 3).toUpperCase()}</div>
@@ -58,8 +58,8 @@ export function OverviewPage({ trip, currentMemberId, onAddNote }: OverviewPageP
         <section className="card next-card">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">Als Nächstes</span>
-              <h2>{nextActivity?.title ?? 'Noch nichts geplant'}</h2>
+              <span className="eyebrow">Up next</span>
+              <h2>{nextActivity?.title ?? 'Nothing planned yet'}</h2>
             </div>
             <CalendarDays aria-hidden="true" />
           </div>
@@ -69,28 +69,28 @@ export function OverviewPage({ trip, currentMemberId, onAddNote }: OverviewPageP
               <p>
                 <MapPin size={16} aria-hidden="true" />
                 <a href={nextActivity.locationUrl} target="_blank" rel="noreferrer">
-                  Standort in Google Maps
+                  Open in Google Maps
                 </a>
               </p>
             </>
           ) : (
-            <p className="muted">Füge im Tagesplan eure erste Aktivität hinzu.</p>
+            <p className="muted">Add your first activity in the day plan.</p>
           )}
         </section>
       </div>
 
       <div className="stats-grid">
-        <Stat icon={<Ticket />} label="Buchungen" value={`${trip.bookings.length} gespeichert`} />
-        <Stat icon={<PackageCheck />} label="Gepackt" value={`${packed} / ${trip.packingItems.length}`} />
-        <Stat icon={<Banknote />} label="Ausgaben" value={formatMoney(totalExpenses, trip.currency)} />
-        <Stat icon={<Users />} label="Reisegruppe" value={`${trip.members.length} Personen`} />
+        <Stat icon={<Ticket />} label="Bookings" value={`${trip.bookings.length} saved`} />
+        <Stat icon={<PackageCheck />} label="Packed" value={`${packed} / ${trip.packingItems.length}`} />
+        <Stat icon={<Banknote />} label="Expenses" value={formatMoney(totalExpenses, trip.currency)} />
+        <Stat icon={<Users />} label="Travel group" value={`${trip.members.length} people`} />
       </div>
 
       <section className="card notes-card">
         <div className="section-heading">
           <div>
-            <span className="eyebrow">Gemeinsam sammeln</span>
-            <h2>Ideen & Notizen</h2>
+            <span className="eyebrow">Collect together</span>
+            <h2>Ideas & notes</h2>
           </div>
           <NotebookPen aria-hidden="true" />
         </div>
@@ -106,11 +106,11 @@ export function OverviewPage({ trip, currentMemberId, onAddNote }: OverviewPageP
           <input
             value={note}
             onChange={(event) => setNote(event.target.value)}
-            aria-label="Neue Notiz"
+            aria-label="New note"
           />
           <button className="primary-button" type="submit">
             <Plus aria-hidden="true" />
-            Hinzufügen
+            Add
           </button>
         </form>
       </section>
