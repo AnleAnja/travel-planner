@@ -24,7 +24,7 @@ export function PackingPage({
     (item) => item.visibility === 'shared' || item.ownerId === currentMemberId,
   )
   const groups = groupBy(visibleItems, (item) =>
-    item.visibility === 'private' ? 'Meine private Liste' : item.category,
+    item.visibility === 'private' ? 'My private list' : item.category,
   )
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -34,7 +34,7 @@ export function PackingPage({
     onAddPackingItem({
       id: crypto.randomUUID(),
       label: String(data.get('label')),
-      category: String(data.get('category')) || 'Sonstiges',
+      category: String(data.get('category')) || 'Other',
       visibility,
       ownerId: currentMemberId,
       assignedTo: visibility === 'shared' ? String(data.get('assignedTo')) : currentMemberId,
@@ -50,28 +50,28 @@ export function PackingPage({
   return (
     <div className="page-content">
       <PageIntro
-        title="Packliste"
-        text=""
-        action={<button className="primary-button" onClick={() => setShowForm(true)}><Plus /> Eintrag</button>}
+        title="Packing list"
+        text="Shared with the group, or kept just for you."
+        action={<button className="primary-button" onClick={() => setShowForm(true)}><Plus /> Item</button>}
       />
       <div className="progress-card">
-        <div><strong>{progress}%</strong><span>bereits gepackt</span></div>
+        <div><strong>{progress}%</strong><span>already packed</span></div>
         <div className="progress-track"><span style={{ width: `${progress}%` }} /></div>
       </div>
       {showForm && (
-        <EditorCard title="Packeintrag hinzufügen" onClose={() => setShowForm(false)}>
+        <EditorCard title="Add packing item" onClose={() => setShowForm(false)}>
           <form className="form-grid" onSubmit={submit}>
-            <Field label="Was muss mit?" name="label" required />
-            <Field label="Kategorie" name="category" defaultValue="Gemeinsam" />
+            <Field label="What needs to come along?" name="label" required />
+            <Field label="Category" name="category" defaultValue="Shared" />
             <label>
-              Sichtbarkeit
+              Visibility
               <select name="visibility">
-                <option value="shared">Gemeinsam</option>
-                <option value="private">Nur für mich</option>
+                <option value="shared">Shared</option>
+                <option value="private">Only for me</option>
               </select>
             </label>
             <label>
-              Zuständig
+              Assigned to
               <select name="assignedTo">
                 {trip.members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
               </select>
@@ -86,7 +86,7 @@ export function PackingPage({
             <div className="section-heading">
               <div>
                 <span className="eyebrow">
-                  {group === 'Meine private Liste' ? <><Lock size={13} /> Privat</> : 'Geteilt'}
+                  {group === 'My private list' ? <><Lock size={13} /> Private</> : 'Shared'}
                 </span>
                 <h2>{group}</h2>
               </div>
@@ -100,7 +100,7 @@ export function PackingPage({
                     <button
                       className="checkbox"
                       onClick={() => onTogglePackingItem(item.id)}
-                      aria-label={`${item.label} ${item.packed ? 'auspacken' : 'einpacken'}`}
+                      aria-label={`${item.label} ${item.packed ? 'unpack' : 'pack'}`}
                     >
                       {item.packed && <Check />}
                     </button>
@@ -109,7 +109,7 @@ export function PackingPage({
                     <button
                       className="icon-button subtle"
                       onClick={() => onDeletePackingItem(item.id)}
-                      aria-label={`${item.label} löschen`}
+                      aria-label={`Delete ${item.label}`}
                     >
                       <Trash2 />
                     </button>

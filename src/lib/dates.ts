@@ -1,5 +1,5 @@
-const dayFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short' })
-const shortDateFormatter = new Intl.DateTimeFormat('de-DE', {
+const dayFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'short' })
+const shortDateFormatter = new Intl.DateTimeFormat('en-US', {
   day: '2-digit',
   month: 'short',
 })
@@ -23,8 +23,8 @@ export function formatTripCountdown(startsOn: string) {
     (parseLocalDate(startsOn).getTime() - today.getTime()) / 86_400_000,
   )
 
-  if (days > 1) return `In ${days} Tagen geht es los`
-  if (days === 1) return 'Morgen geht es los'
-  if (days === 0) return 'Heute geht es los'
-  return 'Die Reise hat bereits begonnen'
+  if (days > 1) return `Starts in ${days} days`
+  if (days === 1) return 'Starts tomorrow'
+  if (days === 0) return 'Starts today'
+  return 'This trip has already started'
 }

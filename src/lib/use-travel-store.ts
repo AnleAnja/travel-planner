@@ -7,14 +7,22 @@ import type {
   Trip,
   TripNote,
 } from '../types'
+import {
+  mapJoinFailure,
+  parseJoinFunctionError,
+  readInvitationCode,
+  type ActionResult,
+} from './invitations'
+import { isPlaceholderName, visibleMemberName } from './names'
 import { loadRemoteTrips } from './remote-trips'
-import { isPlaceholderName } from './names'
 import { currentMemberId as demoMemberId, demoTrips } from './seed'
 import {
   ensureAnonymousSession,
   isSupabaseConfigured,
   supabase,
 } from './supabase'
+
+export type { ActionResult as JoinTripResult } from './invitations'
 
 const storageKey = 'reiseplaner.trips.v2'
 const invitationStorageKey = 'reiseplaner.invitation-codes.v1'
@@ -52,10 +60,6 @@ function saveStoredDisplayName(name: string) {
   }
   localStorage.setItem(displayNameStorageKey, name)
 }
-
-export type JoinTripResult =
-  | { ok: true }
-  | { ok: false; error: string }
 
 export function useTravelStore() {
   const [trips, setTrips] = useState<Trip[]>(loadLocalTrips)
@@ -102,7 +106,7 @@ export function useTravelStore() {
       setSyncError('')
     } catch (error) {
       console.error(error)
-      setSyncError('Die Synchronisierung ist gerade nicht verfügbar.')
+      setSyncError('Sync is unavailable right now.')
     }
   }, [])
 
@@ -127,7 +131,7 @@ export function useTravelStore() {
       })
       .catch((error) => {
         console.error(error)
-        setSyncError('Anonyme Anmeldung fehlgeschlagen.')
+        setSyncError('Anonymous sign-in failed.')
       })
 
     const channel = client
@@ -160,9 +164,14 @@ export function useTravelStore() {
     return () => channel.close()
   }, [])
 
+  const namedTrips = useMemo(
+    () => withVisibleMemberNames(trips, currentMemberId, displayName),
+    [currentMemberId, displayName, trips],
+  )
+
   const activeTrip = useMemo(
-    () => trips.find((trip) => trip.id === activeTripId) ?? trips[0],
-    [activeTripId, trips],
+    () => namedTrips.find((trip) => trip.id === activeTripId) ?? namedTrips[0],
+    [activeTripId, namedTrips],
   )
 
   const updateActiveTrip = useCallback(
@@ -181,7 +190,7 @@ export function useTravelStore() {
       const { error } = await operation()
       if (error) {
         console.error(error)
-        setSyncError('Eine Änderung konnte nicht gespeichert werden.')
+        setSyncError('A change could not be saved.')
         await reloadRemote()
       }
     },
@@ -198,7 +207,7 @@ export function useTravelStore() {
       })
       if (error) {
         console.error(error)
-        setSyncError('Der Anzeigename konnte nicht gespeichert werden.')
+        setSyncError('Your display name could not be saved.')
         return false
       }
       applyDisplayName(trimmed)
@@ -222,9 +231,11 @@ export function useTravelStore() {
         | 'notes'
       >,
       ownerName: string,
-    ) => {
+    ): Promise<ActionResult> => {
       const name = ownerName.trim().slice(0, 60)
-      if (!name || isPlaceholderName(name)) return false
+      if (!name || isPlaceholderName(name)) {
+        return { ok: false, error: 'Please enter your name.' }
+      }
 
       if (supabase) {
         const { data: userData } = await supabase.auth.getUser()
@@ -232,7 +243,9 @@ export function useTravelStore() {
         if (userId !== currentMemberId) setCurrentMemberId(userId)
 
         const profileSaved = await upsertProfileName(name, userId)
-        if (!profileSaved) return false
+        if (!profileSaved) {
+          return { ok: false, error: 'Your display name could not be saved.' }
+        }
 
         const { data, error } = await supabase.rpc('create_trip', {
           trip_title: trip.title,
@@ -245,8 +258,8 @@ export function useTravelStore() {
           trip_longitude: trip.longitude,
         })
         if (error) {
-          setSyncError('Die Reise konnte nicht erstellt werden.')
-          return false
+          setSyncError('The trip could not be created.')
+          return { ok: false, error: 'The trip could not be created.' }
         }
         const { data: invitation, error: invitationError } = await supabase.rpc(
           'create_trip_invitation',
@@ -254,13 +267,13 @@ export function useTravelStore() {
         )
         if (invitationError) {
           console.error(invitationError)
-          setSyncError('Die Einladung konnte nicht erstellt werden.')
+          setSyncError('The invitation could not be created.')
         }
         const inviteCode = readInvitationCode(invitation)
         if (inviteCode) saveInvitationCode(data.id, inviteCode)
         await reloadRemote()
         setActiveTripId(data.id)
-        return true
+        return { ok: true }
       }
 
       const id = crypto.randomUUID()
@@ -285,16 +298,16 @@ export function useTravelStore() {
       }
       setTrips((current) => [...current, created])
       setActiveTripId(id)
-      return true
+      return { ok: true }
     },
     [applyDisplayName, currentMemberId, reloadRemote, upsertProfileName],
   )
 
   const joinTrip = useCallback(
-    async (code: string, name: string): Promise<JoinTripResult> => {
+    async (code: string, name: string): Promise<ActionResult> => {
       const trimmedName = name.trim().slice(0, 60)
       if (!trimmedName || isPlaceholderName(trimmedName)) {
-        return { ok: false, error: 'Bitte gib deinen Namen ein.' }
+        return { ok: false, error: 'Please enter your name.' }
       }
 
       if (supabase) {
@@ -302,37 +315,22 @@ export function useTravelStore() {
           await ensureAnonymousSession()
         } catch (error) {
           console.error(error)
-          return { ok: false, error: 'Anmeldung fehlgeschlagen. Bitte neu laden.' }
+          return { ok: false, error: 'Sign-in failed. Please reload the page.' }
         }
 
-        const { data: tripId, error } = await supabase.rpc('join_trip_with_code', {
-          raw_code: code.trim(),
-          member_display_name: trimmedName,
+        const { data, error } = await supabase.functions.invoke('join-trip', {
+          body: { code: code.trim(), displayName: trimmedName },
         })
 
-        if (error || !tripId) {
-          const message = error?.message ?? ''
-          if (message.includes('Invitation invalid or expired')) {
-            return {
-              ok: false,
-              error: 'Einladung ungültig oder abgelaufen. Erzeuge unter Personen einen neuen Code.',
-            }
-          }
-          if (message.includes('Authentication required')) {
-            return { ok: false, error: 'Anmeldung fehlgeschlagen. Bitte neu laden.' }
-          }
+        if (error || !data?.tripId) {
+          const parsed = await parseJoinFunctionError(error)
           console.error(error)
-          return {
-            ok: false,
-            error:
-              error?.message ||
-              'Beitritt fehlgeschlagen. Prüfe den Code oder erzeuge einen neuen.',
-          }
+          return mapJoinFailure(parsed.status, parsed.message)
         }
 
         applyDisplayName(trimmedName)
         await reloadRemote()
-        setActiveTripId(String(tripId))
+        setActiveTripId(String(data.tripId))
         return { ok: true }
       }
 
@@ -342,7 +340,7 @@ export function useTravelStore() {
       if (!match) {
         return {
           ok: false,
-          error: 'Diesen Einladungscode konnten wir nicht finden.',
+          error: 'We could not find that invite code.',
         }
       }
       applyDisplayName(trimmedName)
@@ -400,7 +398,7 @@ export function useTravelStore() {
     })
     const code = readInvitationCode(data)
     if (error || !code) {
-      setSyncError('Die Einladung konnte nicht erstellt werden.')
+      setSyncError('The invitation could not be created.')
       return ''
     }
     saveInvitationCode(activeTrip.id, code)
@@ -497,14 +495,14 @@ export function useTravelStore() {
           })),
         )
       } else {
-        setSyncError('Die Ausgabe konnte nicht gespeichert werden.')
+        setSyncError('The expense could not be saved.')
         await reloadRemote()
       }
     })()
   }
 
   return {
-    trips,
+    trips: namedTrips,
     activeTrip,
     activeTripId,
     currentMemberId,
@@ -588,31 +586,6 @@ function loadInvitationCodes(): Record<string, string> {
   }
 }
 
-function readInvitationCode(data: unknown) {
-  if (!data) return ''
-
-  let payload = data
-  if (typeof data === 'string') {
-    try {
-      payload = JSON.parse(data)
-    } catch {
-      return ''
-    }
-  }
-
-  if (Array.isArray(payload)) {
-    const first = payload[0] as { code?: unknown } | undefined
-    return typeof first?.code === 'string' ? first.code : ''
-  }
-
-  if (typeof payload === 'object' && payload !== null && 'code' in payload) {
-    const code = (payload as { code?: unknown }).code
-    return typeof code === 'string' ? code : ''
-  }
-
-  return ''
-}
-
 function saveInvitationCode(tripId: string, code: string) {
   localStorage.setItem(
     invitationStorageKey,
@@ -631,6 +604,20 @@ function normalizeTrips(trips: Trip[]) {
     ...trip,
     bookings: trip.bookings ?? [],
     inviteCode: trip.inviteCode || generateInviteCode(),
+  }))
+}
+
+function withVisibleMemberNames(
+  trips: Trip[],
+  memberId: string,
+  displayName: string,
+) {
+  return trips.map((trip) => ({
+    ...trip,
+    members: trip.members.map((member) => {
+      const raw = member.id === memberId ? displayName || member.name : member.name
+      return { ...member, name: visibleMemberName(raw) }
+    }),
   }))
 }
 

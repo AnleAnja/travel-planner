@@ -12,7 +12,7 @@ Deno.serve(async (request) => {
 
   try {
     const authorization = request.headers.get('authorization')
-    if (!authorization) return json({ error: 'Nicht angemeldet.' }, 401)
+    if (!authorization) return json({ error: 'Not signed in.' }, 401)
 
     const url = new URL(request.url)
     const latitude = Number(url.searchParams.get('latitude'))
@@ -23,7 +23,7 @@ Deno.serve(async (request) => {
       Math.abs(latitude) > 90 ||
       Math.abs(longitude) > 180
     ) {
-      return json({ error: 'Koordinaten ungültig.' }, 400)
+      return json({ error: 'Invalid coordinates.' }, 400)
     }
 
     const supabase = createClient(
@@ -32,7 +32,7 @@ Deno.serve(async (request) => {
     )
     const token = authorization.replace(/^Bearer\s+/i, '')
     const { error: authError } = await supabase.auth.getUser(token)
-    if (authError) return json({ error: 'Sitzung ungültig.' }, 401)
+    if (authError) return json({ error: 'Session is invalid.' }, 401)
 
     const cacheKey = `${latitude.toFixed(2)}:${longitude.toFixed(2)}`
     const { data: cached } = await supabase
@@ -67,7 +67,7 @@ Deno.serve(async (request) => {
     return json(payload)
   } catch (error) {
     console.error(error)
-    return json({ error: 'Wetter konnte nicht geladen werden.' }, 502)
+    return json({ error: 'Weather could not be loaded.' }, 502)
   }
 })
 

@@ -1,46 +1,46 @@
-# Reiseplaner – MVP
+# Travel Planner – MVP
 
-## Ziel
+## Goal
 
-Eine mobile, installierbare Web-App, mit der ein Freundeskreis eine Reise ohne Registrierung gemeinsam organisiert. Eine Person erstellt die Reise und teilt einen widerrufbaren Einladungslink oder Code. Gäste erhalten im Hintergrund eine anonyme Sitzung.
+A mobile, installable web app that lets a group organize a trip without a visible sign-up. One person creates the trip and shares a revocable invite link or code. Guests receive an anonymous session in the background.
 
-## Rollen
+## Roles
 
-- **Owner:** Reise bearbeiten oder archivieren, Einladungen erstellen und widerrufen, Mitglieder entfernen.
-- **Member:** Reiseinhalte, Buchungen, gemeinsame Packliste, Aktivitäten, Notizen und Ausgaben bearbeiten.
-- Private Packeinträge sind ausschließlich für ihre Urheberin oder ihren Urheber sichtbar.
+- **Owner:** edit or archive the trip, create and revoke invites, remove members.
+- **Member:** edit trip content, bookings, the shared packing list, activities, notes, and expenses.
+- Private packing items are visible only to the person who created them.
 
-## Kernabläufe
+## Core flows
 
-1. Reise mit Titel, Ziel, Zeitraum, Zeitzone und Währung erstellen.
-2. Link oder Code teilen; Gast gibt einen Anzeigenamen ein und tritt der Reise bei.
-3. Tagesaktivitäten mit Uhrzeit, Notiz und eingebettetem Google-Maps-Link planen.
-4. Flüge, Unterkünfte, Tickets und andere Buchungsbestätigungen verwalten.
-5. Gemeinsame oder private Packeinträge anlegen und abhaken.
-6. Ausgaben mit zahlender Person und Beteiligten erfassen.
-7. Wetter für das Reiseziel ansehen und zum Reiseende eine Ausgleichsbilanz abrufen.
+1. Create a trip with title, destination, dates, timezone, and currency.
+2. Share a link or code; the guest enters a display name and joins.
+3. Plan day activities with a time, note, and embedded Google Maps link.
+4. Manage flights, stays, tickets, and other booking confirmations.
+5. Add shared or private packing items and check them off.
+6. Record expenses with who paid and who shares the cost.
+7. View weather for the destination and a settlement balance at the end.
 
-## Produktgrenzen
+## Product limits
 
-- Eine Währung je Reise.
-- Online-first: zuletzt gelesene App-Inhalte können gecacht werden, Änderungen benötigen Internet.
-- Google Maps wird über vom Nutzer eingefügte Links eingebettet und zusätzlich extern geöffnet; es wird kein API-Key verwendet.
-- Wetterdaten stammen nicht-kommerziell von Open-Meteo und werden entsprechend gekennzeichnet.
-- Keine Zahlungen, Chats, Push-Nachrichten, Belegscans oder vollständige Offline-Synchronisierung.
+- One currency per trip.
+- Online-first: already loaded content can be cached; changes need internet.
+- Google Maps is embedded from links the user pastes, and also opened externally; there is no Maps API key.
+- Weather data comes non-commercially from Open-Meteo and is credited on screen.
+- No payments, chats, push notifications, receipt scanning, or full offline sync.
 
-## Datenschutz und Sicherheit
+## Privacy and security
 
-- Reiseinhalte liegen ausschließlich in Supabase, nicht im öffentlichen GitHub-Repository.
-- Row-Level Security erzwingt Mitgliedschaft und Privatsphäre serverseitig.
-- Einladungen werden gehasht gespeichert, laufen ab und können widerrufen werden.
-- Kurzcodes werden ausschließlich über eine rate-limit-fähige Edge Function eingelöst.
-- Es werden keine Service-Role-Schlüssel im Browser oder Repository hinterlegt.
-- Für den kostenlosen Betrieb sind regelmäßige manuelle Datenexporte vorgesehen.
+- Trip content lives in Supabase, not in the public GitHub repository.
+- Row Level Security enforces membership and privacy on the server.
+- Invites are stored hashed, expire, and can be revoked.
+- Short codes are redeemed only through the rate-limited `join-trip` Edge Function. The browser must not call `join_trip_with_code` directly.
+- Service-role keys are never stored in the browser or repository.
+- Free-tier operation expects periodic manual data exports.
 
-## Akzeptanzkriterien
+## Acceptance criteria
 
-- Ein Gast kann ohne sichtbare Registrierung einer freigegebenen Reise beitreten.
-- Fremde anonyme Sitzungen können weder Reisen erraten noch private Einträge abrufen.
-- Änderungen zweier Geräte erscheinen zeitnah.
-- Die Ausgabenbilanz gleicht alle Salden centgenau aus.
-- Die App ist installierbar, responsiv, per Tastatur nutzbar und erklärt ihren Offline-Zustand.
+- A guest can join a shared trip without a visible registration flow.
+- Other anonymous sessions cannot guess trips or read private items.
+- Changes from two devices appear promptly.
+- The expense balance settles every cent.
+- The app is installable, responsive, keyboard-usable, and explains its offline state.

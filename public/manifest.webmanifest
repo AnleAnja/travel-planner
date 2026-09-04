@@ -1,7 +1,7 @@
 {
-  "name": "Weggefährten – Reiseplaner",
-  "short_name": "Weggefährten",
-  "description": "Reisen gemeinsam planen, packen und abrechnen.",
+  "name": "Travel Planner",
+  "short_name": "Travel Planner",
+  "description": "Plan, pack, and settle trips together.",
   "theme_color": "#315f57",
   "background_color": "#f6f3ec",
   "display": "standalone",

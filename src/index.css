@@ -1258,6 +1258,12 @@ textarea:focus {
   top: 30px;
 }
 
+.empty-welcome .system-banner {
+  position: absolute;
+  top: 72px;
+  width: min(100%, 520px);
+}
+
 .brand-mark.large {
   width: 80px;
   height: 80px;

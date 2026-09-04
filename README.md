@@ -1,53 +1,27 @@
-# Weggefährten
+# Travel Planner
 
-Eine mobile-first PWA für gemeinsame Reiseplanung: Tagesplan mit eingebetteten
-Google-Maps-Orten, Buchungsübersicht, private und geteilte Packlisten, Wetter,
-Notizen, Reisegruppe und centgenaue Ausgabenabrechnung.
+Plan a trip with the people you travel with. Keep the day plan, bookings, packing lists, notes, weather, and shared costs in one place.
 
-## Lokal starten
+## How to use it
 
-```bash
-npm install
-npm run dev
-```
+**Start a trip.** Add your name, a trip name, destination, and dates. You become the trip owner.
 
-Ohne Umgebungsvariablen startet die App bewusst im lokalen Demo-Modus. Daten
-werden im Browser gespeichert und zwischen Tabs synchronisiert.
+**Invite people.** Open People and copy the invite link or code. Anyone with a current code can join and choose the name the group will see. Creating a new code retires the old one, so previous links stop working.
 
-## Supabase verbinden
+**Plan the days.** Add activities with a time and a full Google Maps link so the place shows on the map.
 
-1. Kostenloses Supabase-Projekt in einer EU-Region erstellen.
-2. Anonyme Anmeldung unter **Authentication → Providers → Anonymous** aktivieren.
-3. Migrationen aus `supabase/migrations` anwenden.
-4. Edge Functions `join-trip` und `weather` deployen.
-5. `.env.example` nach `.env.local` kopieren und die öffentlichen Projektwerte
-   eintragen.
+**Keep bookings handy.** Save flights, stays, tickets, and confirmation numbers so they are ready when you need them.
 
-Der Service-Role-Key darf ausschließlich als automatisch vorhandenes Secret in
-Supabase Edge Functions verwendet werden. Die Sicherheit des Browsers basiert
-auf den RLS-Richtlinien, nicht auf dem öffentlichen Publishable-Key.
+**Pack together.** Shared items are visible to everyone on the trip. Private items stay visible only to you.
 
-## GitHub Pages
+**Split costs.** Add who paid and who should share it. The app calculates who owes whom, down to the cent.
 
-Der Workflow `.github/workflows/deploy-pages.yml` testet und veröffentlicht
-Pushes auf `main`. Im Repository:
+## Demo copy vs a live group
 
-1. Unter **Settings → Pages** als Quelle **GitHub Actions** wählen.
-2. Unter **Settings → Secrets and variables → Actions → Variables** die Werte
-   `VITE_SUPABASE_URL` und `VITE_SUPABASE_PUBLISHABLE_KEY` anlegen.
-3. Das öffentliche Repository muss `travel-planner` heißen. Bei einem anderen
-   Namen den `base`-Pfad in `vite.config.ts` anpassen.
+If you open a copy that is not connected to a shared project, you are in demo mode. That trip stays on this device (and in other tabs on the same browser). It is useful for trying the app.
 
-## Qualität
+A live trip is shared with your group. Changes show up for everyone who joined, and you can pick up the same trip on another device.
 
-```bash
-npm run lint
-npm test
-npm run build
-npx playwright install chromium
-npm run test:e2e
-```
+## Privacy in short
 
-Open-Meteo wird ausschließlich nichtkommerziell und mit sichtbarer
-Quellenangabe verwendet. Für einen späteren kommerziellen Betrieb muss die
-Lizenz neu bewertet werden.
+Only people who created the trip or joined with a valid invite can see it. Private packing items are hidden from everyone else. Invite codes expire and can be replaced.

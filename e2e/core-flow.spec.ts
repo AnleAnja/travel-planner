@@ -11,16 +11,16 @@ test('shows the travel dashboard and switches sections', async ({
   isMobile,
 }) => {
   await expect(
-    page.getByRole('heading', { name: '[Reisename]' }),
+    page.getByRole('heading', { name: '[Trip name]' }),
   ).toBeVisible()
-  await expect(page.getByText('Willkommen in [Reiseziel]!')).toBeVisible()
+  await expect(page.getByText('Welcome to [Destination]!')).toBeVisible()
 
   await page
-    .getByLabel(isMobile ? 'Mobile Navigation' : 'Reisebereiche')
-    .getByRole('button', { name: 'Packen' })
+    .getByLabel(isMobile ? 'Mobile navigation' : 'Trip sections')
+    .getByRole('button', { name: 'Packing' })
     .click()
-  await expect(page.getByRole('heading', { name: 'Packliste' })).toBeVisible()
-  await expect(page.getByText('[Gemeinsamer Packgegenstand]')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Packing list' })).toBeVisible()
+  await expect(page.getByText('[Shared packing item]')).toBeVisible()
 })
 
 test('embeds a Google Maps location in the day plan', async ({
@@ -28,27 +28,27 @@ test('embeds a Google Maps location in the day plan', async ({
   isMobile,
 }) => {
   await page
-    .getByLabel(isMobile ? 'Mobile Navigation' : 'Reisebereiche')
+    .getByLabel(isMobile ? 'Mobile navigation' : 'Trip sections')
     .getByRole('button', { name: 'Plan' })
     .click()
 
-  const map = page.getByTitle('Karte für [Ankunft und Check-in]')
+  const map = page.getByTitle('Map for [Arrival and check-in]')
   await expect(map).toBeVisible()
   await expect(map).toHaveAttribute('src', /maps\.google\.com\/maps/)
 })
 
 test('shows and creates booking records', async ({ page, isMobile }) => {
   await page
-    .getByLabel(isMobile ? 'Mobile Navigation' : 'Reisebereiche')
-    .getByRole('button', { name: 'Buchungen' })
+    .getByLabel(isMobile ? 'Mobile navigation' : 'Trip sections')
+    .getByRole('button', { name: 'Bookings' })
     .click()
-  await expect(page.getByText('[Hinreise]')).toBeVisible()
+  await expect(page.getByText('[Outbound trip]')).toBeVisible()
 
-  await page.getByRole('button', { name: 'Buchung', exact: true }).click()
-  await page.getByLabel('Titel').fill('[Neue Buchung]')
-  await page.getByLabel('Beginn / Check-in').fill('2026-09-15T13:00')
-  await page.getByRole('button', { name: 'Speichern' }).click()
-  await expect(page.getByRole('heading', { name: '[Neue Buchung]' })).toBeVisible()
+  await page.getByRole('button', { name: 'Booking', exact: true }).click()
+  await page.getByLabel('Title').fill('[New booking]')
+  await page.getByLabel('Start / check-in').fill('2026-09-15T13:00')
+  await page.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByRole('heading', { name: '[New booking]' })).toBeVisible()
 })
 
 test('keeps the selected section in hash navigation', async ({
@@ -57,11 +57,11 @@ test('keeps the selected section in hash navigation', async ({
 }) => {
   await page.goto('/#/bookings')
   await expect(
-    page.getByRole('heading', { name: 'Buchungen', exact: true }),
+    page.getByRole('heading', { name: 'Bookings', exact: true }),
   ).toBeVisible()
 
   await page
-    .getByLabel(isMobile ? 'Mobile Navigation' : 'Reisebereiche')
+    .getByLabel(isMobile ? 'Mobile navigation' : 'Trip sections')
     .getByRole('button', { name: 'Plan' })
     .click()
   await expect(page).toHaveURL(/#\/plan$/)
@@ -72,14 +72,33 @@ test('keeps the selected section in hash navigation', async ({
 
 test('adds an evenly split expense', async ({ page, isMobile }) => {
   await page
-    .getByLabel(isMobile ? 'Mobile Navigation' : 'Reisebereiche')
-    .getByRole('button', { name: 'Ausgaben' })
+    .getByLabel(isMobile ? 'Mobile navigation' : 'Trip sections')
+    .getByRole('button', { name: 'Expenses' })
     .click()
-  await page.getByRole('button', { name: 'Ausgabe', exact: true }).click()
-  await page.getByLabel('Beschreibung').fill('[Neue Ausgabe]')
-  await page.getByLabel('Betrag').fill('90')
-  await page.getByRole('button', { name: 'Speichern' }).click()
+  await page.getByRole('button', { name: 'Expense', exact: true }).click()
+  await page.getByLabel('Description').fill('[New expense]')
+  await page.getByLabel('Amount').fill('90')
+  await page.getByRole('button', { name: 'Save' }).click()
 
-  await expect(page.getByText('[Neue Ausgabe]')).toBeVisible()
-  await expect(page.getByText('612,00 €')).toBeVisible()
+  await expect(page.getByText('[New expense]')).toBeVisible()
+  await expect(page.getByText('€612.00')).toBeVisible()
+})
+
+test('shows the same guest name in the header and people list', async ({
+  page,
+  isMobile,
+}) => {
+  await expect(page.locator('.profile strong')).toHaveText('Guest')
+
+  if (isMobile) {
+    await page.getByLabel('Open menu').click()
+    await page.getByRole('button', { name: 'People' }).click()
+  } else {
+    await page
+      .getByLabel('Trip sections')
+      .getByRole('button', { name: 'People' })
+      .click()
+  }
+
+  await expect(page.getByText('Guest (You)')).toBeVisible()
 })

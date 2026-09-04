@@ -15,12 +15,12 @@ export const tabs: {
   icon: typeof Home
   showOnMobile: boolean
 }[] = [
-  { id: 'overview', label: 'Übersicht', icon: Home, showOnMobile: true },
+  { id: 'overview', label: 'Overview', icon: Home, showOnMobile: true },
   { id: 'plan', label: 'Plan', icon: CalendarDays, showOnMobile: true },
-  { id: 'bookings', label: 'Buchungen', icon: Ticket, showOnMobile: true },
-  { id: 'packing', label: 'Packen', icon: PackageCheck, showOnMobile: true },
-  { id: 'expenses', label: 'Ausgaben', icon: ReceiptText, showOnMobile: true },
-  { id: 'people', label: 'Personen', icon: Users, showOnMobile: false },
+  { id: 'bookings', label: 'Bookings', icon: Ticket, showOnMobile: true },
+  { id: 'packing', label: 'Packing', icon: PackageCheck, showOnMobile: true },
+  { id: 'expenses', label: 'Expenses', icon: ReceiptText, showOnMobile: true },
+  { id: 'people', label: 'People', icon: Users, showOnMobile: false },
 ]
 
 export function isTab(value: string): value is Tab {

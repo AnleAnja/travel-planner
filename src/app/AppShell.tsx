@@ -8,7 +8,7 @@ import {
   Route,
   X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Avatar, Brand } from '../components/ui'
 import { BookingsPage, type BookingsPageProps } from '../features/bookings/BookingsPage'
 import { ExpensesPage, type ExpensesPageProps } from '../features/expenses/ExpensesPage'
@@ -18,6 +18,7 @@ import { PackingPage, type PackingPageProps } from '../features/packing/PackingP
 import { PeoplePage, type PeoplePageProps } from '../features/people/PeoplePage'
 import { useTabRoute } from '../hooks/use-tab-route'
 import { formatShortDate } from '../lib/dates'
+import { visibleMemberName } from '../lib/names'
 import type { JoinTripResult } from '../lib/use-travel-store'
 import type { Member, Trip } from '../types'
 import { CreateTripDialog, type CreateTripInput } from './CreateTripDialog'
@@ -35,7 +36,7 @@ export interface AppShellProps {
   syncError: string
   isDemoMode: boolean
   onSelectTrip: (id: string) => void
-  onCreateTrip: (trip: CreateTripInput, ownerName: string) => Promise<boolean>
+  onCreateTrip: (trip: CreateTripInput, ownerName: string) => Promise<JoinTripResult>
   onJoinTrip: (code: string, name: string) => Promise<JoinTripResult>
   overview: Omit<OverviewPageProps, 'trip'>
   itinerary: Omit<ItineraryPageProps, 'trip'>
@@ -53,7 +54,7 @@ export function AppShell(props: AppShellProps) {
   const [dismissedInviteCode, setDismissedInviteCode] = useState('')
   const currentMember = props.currentMember ?? {
     id: 'placeholder',
-    name: props.displayName || 'Gast',
+    name: visibleMemberName(props.displayName),
     role: 'member' as const,
     color: '#70807a',
   }
@@ -70,8 +71,9 @@ export function AppShell(props: AppShellProps) {
   }
 
   async function createTrip(trip: CreateTripInput, ownerName: string) {
-    const created = await props.onCreateTrip(trip, ownerName)
-    if (created) setCreateOpen(false)
+    const result = await props.onCreateTrip(trip, ownerName)
+    if (result.ok) setCreateOpen(false)
+    return result
   }
 
   async function joinTrip(code: string, name: string) {
@@ -100,10 +102,23 @@ export function AppShell(props: AppShellProps) {
     </>
   )
 
+  const statusBanner = (!props.isOnline || props.syncError || props.isDemoMode) && (
+    <div className={!props.isOnline || props.syncError ? 'system-banner error' : 'system-banner'}>
+      {!props.isOnline
+        ? 'Offline: already loaded content is available. Changes need an internet connection.'
+        : props.syncError ||
+          'Demo mode: this copy stays on your device. Connect a live project to plan with others.'}
+    </div>
+  )
+
   if (!props.activeTrip) {
     return (
       <>
-        <EmptyWelcome onCreate={() => setCreateOpen(true)} onJoin={() => setJoinOpen(true)} />
+        <EmptyWelcome
+          onCreate={() => setCreateOpen(true)}
+          onJoin={() => setJoinOpen(true)}
+          banner={statusBanner}
+        />
         {dialogs}
       </>
     )
@@ -113,7 +128,7 @@ export function AppShell(props: AppShellProps) {
   return (
     <div className="app-shell">
       <header className="mobile-header">
-        <button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Menü öffnen">
+        <button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
           <Menu />
         </button>
         <Brand />
@@ -123,12 +138,12 @@ export function AppShell(props: AppShellProps) {
       <aside className={sidebarOpen ? 'sidebar sidebar-open' : 'sidebar'}>
         <div className="sidebar-top">
           <Brand />
-          <button className="icon-button sidebar-close" onClick={() => setSidebarOpen(false)} aria-label="Menü schließen">
+          <button className="icon-button sidebar-close" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X />
           </button>
         </div>
         <div className="trip-switcher">
-          <label htmlFor="trip-select">Deine Reisen</label>
+          <label htmlFor="trip-select">Your trips</label>
           <div className="select-wrap">
             <select id="trip-select" value={props.activeTripId} onChange={(event) => props.onSelectTrip(event.target.value)}>
               {props.trips.map((item) => <option value={item.id} key={item.id}>{item.title}</option>)}
@@ -145,10 +160,10 @@ export function AppShell(props: AppShellProps) {
         />
         <div className="sidebar-actions">
           <button className="secondary-button" onClick={() => setJoinOpen(true)}>
-            <Link2 aria-hidden="true" /> Reise beitreten
+            <Link2 aria-hidden="true" /> Join a trip
           </button>
           <button className="primary-button" onClick={() => setCreateOpen(true)}>
-            <Plus aria-hidden="true" /> Neue Reise
+            <Plus aria-hidden="true" /> New trip
           </button>
         </div>
         <div className="profile">
@@ -156,23 +171,16 @@ export function AppShell(props: AppShellProps) {
           <div>
             <strong>{currentMember.name}</strong>
             <span>
-              {currentMember.role === 'owner' ? 'Reise-Owner' : 'Mitglied'}
+              {currentMember.role === 'owner' ? 'Trip owner' : 'Member'}
             </span>
           </div>
         </div>
       </aside>
 
-      {sidebarOpen && <button className="backdrop" onClick={() => setSidebarOpen(false)} aria-label="Menü schließen" />}
+      {sidebarOpen && <button className="backdrop" onClick={() => setSidebarOpen(false)} aria-label="Close menu" />}
 
       <main>
-        {(!props.isOnline || props.syncError || props.isDemoMode) && (
-          <div className={!props.isOnline || props.syncError ? 'system-banner error' : 'system-banner'}>
-            {!props.isOnline
-              ? 'Offline: Bereits geladene Inhalte sind verfügbar, Änderungen sind erst mit Internet möglich.'
-              : props.syncError ||
-                'Demo-Modus: Verbinde Supabase über die Umgebungsvariablen für geräteübergreifende Zusammenarbeit.'}
-          </div>
-        )}
+        {statusBanner}
         <TripHeader trip={trip} tab={tab} />
         {tab === 'overview' && <OverviewPage trip={trip} {...props.overview} />}
         {tab === 'plan' && <ItineraryPage trip={trip} {...props.itinerary} />}
@@ -190,7 +198,7 @@ export function AppShell(props: AppShellProps) {
 
 function Navigation({ tab, onSelect }: { tab: Tab; onSelect: (tab: Tab) => void }) {
   return (
-    <nav aria-label="Reisebereiche">
+    <nav aria-label="Trip sections">
       {tabs.map((item) => {
         const Icon = item.icon
         return (
@@ -205,7 +213,7 @@ function Navigation({ tab, onSelect }: { tab: Tab; onSelect: (tab: Tab) => void 
 
 function MobileNavigation({ tab, onSelect }: { tab: Tab; onSelect: (tab: Tab) => void }) {
   return (
-    <nav className="mobile-nav" aria-label="Mobile Navigation">
+    <nav className="mobile-nav" aria-label="Mobile navigation">
       {tabs.filter((item) => item.showOnMobile).map((item) => {
         const Icon = item.icon
         return <button key={item.id} className={tab === item.id ? 'active' : ''} onClick={() => onSelect(item.id)}><Icon /><span>{item.label}</span></button>
@@ -226,17 +234,26 @@ function TripHeader({ trip, tab }: { trip: Trip; tab: Tab }) {
   )
 }
 
-function EmptyWelcome({ onCreate, onJoin }: { onCreate: () => void; onJoin: () => void }) {
+function EmptyWelcome({
+  onCreate,
+  onJoin,
+  banner,
+}: {
+  onCreate: () => void
+  onJoin: () => void
+  banner: ReactNode
+}) {
   return (
     <main className="empty-welcome">
       <Brand />
+      {banner}
       <div className="brand-mark large"><Route /></div>
-      <span className="eyebrow">Gemeinsam unterwegs</span>
-      <h1>Die nächste Reise beginnt hier.</h1>
-      <p>Plane Tage, Packlisten und Kosten gemeinsam mit anderen.</p>
+      <span className="eyebrow">Plan together</span>
+      <h1>Your next trip starts here.</h1>
+      <p>Plan days, packing lists, and costs with the people you travel with.</p>
       <div>
-        <button className="primary-button" onClick={onCreate}>Reise planen <ArrowRight /></button>
-        <button className="secondary-button" onClick={onJoin}>Code eingeben</button>
+        <button className="primary-button" onClick={onCreate}>Plan a trip <ArrowRight /></button>
+        <button className="secondary-button" onClick={onJoin}>Enter a code</button>
       </div>
     </main>
   )

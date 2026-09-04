@@ -15,12 +15,12 @@ import { EditorCard, Field, FormActions, PageIntro, Stat } from '../../component
 import type { Booking, BookingType, Trip } from '../../types'
 
 const bookingTypeLabels: Record<BookingType, string> = {
-  accommodation: 'Unterkunft',
-  flight: 'Flug',
-  train: 'Bahn',
-  rental: 'Mietwagen',
-  activity: 'Aktivität',
-  other: 'Sonstiges',
+  accommodation: 'Stay',
+  flight: 'Flight',
+  train: 'Train',
+  rental: 'Rental car',
+  activity: 'Activity',
+  other: 'Other',
 }
 
 const bookingTypeIcons: Record<BookingType, typeof Ticket> = {
@@ -65,50 +65,50 @@ export function BookingsPage({ trip, onAddBooking, onDeleteBooking }: BookingsPa
   return (
     <div className="page-content">
       <PageIntro
-        title="Buchungen"
-        text="Flüge, Unterkünfte, Tickets und Bestätigungen."
-        action={<button className="primary-button" onClick={() => setShowForm(true)}><Plus /> Buchung</button>}
+        title="Bookings"
+        text="Flights, stays, tickets, and confirmations."
+        action={<button className="primary-button" onClick={() => setShowForm(true)}><Plus /> Booking</button>}
       />
       <div className="booking-summary">
         <Stat
           icon={<Plane />}
-          label="Anreise"
-          value={`${trip.bookings.filter((booking) => booking.type === 'flight' || booking.type === 'train').length} Buchungen`}
+          label="Travel"
+          value={`${trip.bookings.filter((booking) => booking.type === 'flight' || booking.type === 'train').length} bookings`}
         />
         <Stat
           icon={<BedDouble />}
-          label="Unterkünfte"
-          value={`${trip.bookings.filter((booking) => booking.type === 'accommodation').length} Buchungen`}
+          label="Stays"
+          value={`${trip.bookings.filter((booking) => booking.type === 'accommodation').length} bookings`}
         />
-        <Stat icon={<Ticket />} label="Insgesamt" value={`${trip.bookings.length} Buchungen`} />
+        <Stat icon={<Ticket />} label="Total" value={`${trip.bookings.length} bookings`} />
       </div>
       {showForm && (
-        <EditorCard title="Buchung hinzufügen" onClose={() => setShowForm(false)}>
+        <EditorCard title="Add booking" onClose={() => setShowForm(false)}>
           <form className="form-grid" onSubmit={submit}>
             <label>
-              Art
+              Type
               <select name="type" defaultValue="accommodation">
                 {Object.entries(bookingTypeLabels).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
               </select>
             </label>
-            <Field label="Titel" name="title" required />
-            <Field label="Anbieter" name="provider" />
+            <Field label="Title" name="title" required />
+            <Field label="Provider" name="provider" />
             <Field
-              label="Buchungsnummer"
+              label="Confirmation number"
               name="confirmationNumber"
             />
-            <Field label="Beginn / Check-in" name="startsAt" type="datetime-local" required />
-            <Field label="Ende / Check-out" name="endsAt" type="datetime-local" />
-            <Field label="Ort" name="location" />
+            <Field label="Start / check-in" name="startsAt" type="datetime-local" required />
+            <Field label="End / check-out" name="endsAt" type="datetime-local" />
+            <Field label="Place" name="location" />
             <Field
-              label="Link zur Buchung"
+              label="Booking link"
               name="bookingUrl"
               type="url"
             />
             <label className="full-field">
-              Notizen
+              Notes
               <textarea name="notes" rows={3} />
             </label>
             <FormActions onCancel={() => setShowForm(false)} />
@@ -118,8 +118,8 @@ export function BookingsPage({ trip, onAddBooking, onDeleteBooking }: BookingsPa
       {sortedBookings.length === 0 ? (
         <section className="card booking-empty">
           <Ticket aria-hidden="true" />
-          <h2>Noch keine Buchungen</h2>
-          <p>Speichere die erste Bestätigung, damit sie unterwegs sofort zur Hand ist.</p>
+          <h2>No bookings yet</h2>
+          <p>Save the first confirmation so it is ready when you need it.</p>
         </section>
       ) : (
         <div className="booking-list">
@@ -140,7 +140,7 @@ function BookingCard({ booking, onDelete }: { booking: Booking; onDelete: () => 
   const Icon = bookingTypeIcons[booking.type]
   const startsAt = new Date(booking.startsAt)
   const endsAt = booking.endsAt ? new Date(booking.endsAt) : null
-  const dateFormatter = new Intl.DateTimeFormat('de-DE', {
+  const dateFormatter = new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
     day: '2-digit',
     month: 'short',
@@ -154,7 +154,7 @@ function BookingCard({ booking, onDelete }: { booking: Booking; onDelete: () => 
       <div className="booking-main">
         <span className="eyebrow">{bookingTypeLabels[booking.type]}</span>
         <h2>{booking.title}</h2>
-        <p className="booking-provider">{booking.provider || 'Kein Anbieter angegeben'}</p>
+        <p className="booking-provider">{booking.provider || 'No provider given'}</p>
         <div className="booking-time">
           <CalendarDays aria-hidden="true" />
           <span>{dateFormatter.format(startsAt)}{endsAt && ` – ${dateFormatter.format(endsAt)}`}</span>
@@ -163,13 +163,13 @@ function BookingCard({ booking, onDelete }: { booking: Booking; onDelete: () => 
         {booking.notes && <p className="booking-notes">{booking.notes}</p>}
       </div>
       <div className="booking-meta">
-        {booking.confirmationNumber && <div><span>Bestätigung</span><strong>{booking.confirmationNumber}</strong></div>}
+        {booking.confirmationNumber && <div><span>Confirmation</span><strong>{booking.confirmationNumber}</strong></div>}
         {booking.bookingUrl && (
           <a className="secondary-button" href={booking.bookingUrl} target="_blank" rel="noreferrer">
-            Öffnen <ExternalLink aria-hidden="true" />
+            Open <ExternalLink aria-hidden="true" />
           </a>
         )}
-        <button className="icon-button subtle" onClick={onDelete} aria-label={`${booking.title} löschen`}>
+        <button className="icon-button subtle" onClick={onDelete} aria-label={`Delete ${booking.title}`}>
           <Trash2 />
         </button>
       </div>
