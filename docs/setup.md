@@ -16,7 +16,7 @@ Without environment variables the app starts in demo mode. Data is stored in the
 1. Create a free Supabase project in an EU region.
 2. Enable anonymous sign-in under **Authentication → Providers → Anonymous**.
 3. Apply migrations from `supabase/migrations`.
-4. Deploy Edge Functions `join-trip` and `weather`. Invite codes must be redeemed only through `join-trip`; do not grant `join_trip_with_code` to the `authenticated` or `anon` roles.
+4. Deploy Edge Functions `join-trip` and `weather` with JWT verification off at the gateway (`--no-verify-jwt` or the `[functions.*] verify_jwt = false` entries in `config.toml`). The functions still check the user session themselves. That way the browser CORS preflight is not blocked with a header-less 401. Invite codes must be redeemed only through `join-trip`; do not grant `join_trip_with_code` to the `authenticated` or `anon` roles.
 5. Copy `.env.example` to `.env.local` and fill in the public project values.
 
 The service-role key may only be used as an Edge Function secret. Browser security comes from Row Level Security, not from hiding the publishable key.
